@@ -43,6 +43,7 @@ That data is messier than it looks. Some things the rules handle:
 - **Companies name fiscal years differently.** Walmart calls the year that ended in January 2025 "fiscal 2025"; Home Depot calls the year that ended in February 2025 "fiscal 2024". Receipts follows each company's own naming, and the SEC's year labels in older reports are often off by one, so only recent reports count.
 - **Numbers get restated.** Dollar Tree first reported $30.6B in revenue for fiscal 2023, and later $16.8B after selling Family Dollar. Receipts shows both, with links.
 - **Labels get misused.** One company uses the "Revenues" label for an empty table cell. If labels disagree, Receipts refuses rather than guesses.
+- **"Revenue" can mean more than one number.** Chevron's total includes other income; its sales are a separate figure. When a report gives both, Receipts shows both.
 
 When the data doesn't give one clear answer, Receipts says **CAN'T VERIFY** and explains why. A wrong number is worse than no number.
 
@@ -50,6 +51,8 @@ When the data doesn't give one clear answer, Receipts says **CAN'T VERIFY** and 
 
 - Annual numbers from US companies' 10-K reports only. Foreign companies that file a 20-F aren't supported yet.
 - For banks, insurers and real-estate trusts, revenue is only checked when the company reports a single total.
+- A company that reorganized under a new SEC filer ID (Disney in 2019, Exxon in 2026) only has the years filed under the new ID.
+- Receipts sometimes refuses when the data is actually fine (for example Mastercard 2018-2019, where one label is revenue before rebates). That is on purpose: it can't tell those cases apart from real mistakes yet.
 - Only revenue so far. More numbers come in Step 2.
 
 ## Built with AI help

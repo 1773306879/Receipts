@@ -40,6 +40,12 @@ def show_receipt(receipt):
             f"The company calls this fiscal {receipt['fiscal_year']}. That follows how it names its years "
             f"in {naming['agreeing']} of its {naming['reports']} most recent annual reports.",
         )
+    else:
+        table.add_row(
+            "Year name",
+            f"Fiscal {receipt['fiscal_year']}, named after the calendar year it ends in (the usual style; "
+            "the SEC data has no year labels for this company to check against).",
+        )
     table.add_row("Source", f"Form {receipt['form']} filed {receipt['filed']}, accession number {receipt['accession_number']}")
     original = receipt["originally_reported"]
     if original:
@@ -47,6 +53,12 @@ def show_receipt(receipt):
             "[yellow]Changed[/yellow]",
             f"[yellow]An earlier report (filed {original['filed']}) gave ${original['value']:,} "
             f"({readable_money(original['value'])}). Later reports changed it to the value above.[/yellow]",
+        )
+    for other in receipt["also_reported"]:
+        table.add_row(
+            "Also reported",
+            f"The same report also gives ${other['value']:,} ({readable_money(other['value'])}) under the tag "
+            f"{other['tag']}. Some people quote that number instead.",
         )
     table.add_row("SEC tag", receipt["tag"])
     table.add_row("Meaning", receipt["definition"])
