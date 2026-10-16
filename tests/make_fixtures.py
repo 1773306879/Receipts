@@ -13,11 +13,11 @@ from pathlib import Path
 from receipts.metrics import METRICS
 from receipts.sec import CACHE_DIR, find_company
 
-COMPANIES = ["AAPL", "WMT", "HD", "WEN", "DLTR", "GOOGL"]
+COMPANIES = ["AAPL", "WMT", "HD", "WEN", "DLTR", "GOOGL", "MSFT", "NVDA", "TJX", "CAKE", "FLS", "GPN", "VTSI", "MTB"]
 KEEP_FIELDS = ["start", "end", "val", "accn", "fy", "fp", "form", "filed"]
 FIXTURES = Path(__file__).parent / "fixtures"
 
-tags = {tag for metric in METRICS.values() for tag in metric["tags"]}
+tags = {tag for metric in METRICS.values() for tag in metric["tags"] + metric["financial_company_tags"]}
 FIXTURES.mkdir(exist_ok=True)
 for ticker in COMPANIES:
     cik = find_company(ticker)["cik"]
