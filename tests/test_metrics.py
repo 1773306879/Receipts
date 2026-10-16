@@ -59,6 +59,23 @@ def test_a_zero_under_one_tag_does_not_hide_the_real_revenue():
     assert revenue("FLS", 2024)["value"] == 4_557_806_000
 
 
+def test_goods_only_tag_is_a_last_resort():
+    # Coca-Cola reported revenue only as "sales of goods" until 2017...
+    assert revenue("KO", 2015)["value"] == 44_294_000_000
+    # ...but when a report has a real total, the goods-only part is never picked.
+    # (Microsoft's fiscal 2014: total $86.833B, of which products $72.948B.)
+    assert revenue("MSFT", 2014)["value"] == 86_833_000_000
+
+
+def test_other_figures_in_the_same_report_are_shown():
+    # Chevron's "Revenues" is total revenues and other income; its sales are a separate, smaller tag.
+    found = revenue("CVX", 2025)
+    assert found["value"] == 189_031_000_000
+    assert found["also_reported"] == [
+        {"tag": "RevenueFromContractWithCustomerExcludingAssessedTax", "value": 184_432_000_000}
+    ]
+
+
 def test_tags_that_disagree_are_refused():
     # In Virtual Systems' 2025 report, "Revenues" is attached to a $185,971 expense note,
     # while its real revenue is about $22.4M. We can't tell which one is meant, so we refuse.
@@ -123,10 +140,38 @@ def test_recent_reports_decide_the_naming():
     assert (found["value"], found["period_end"]) == (48_550_000_000, "2022-01-29")
 
 
-def test_unclear_naming_is_refused():
-    # The Cheesecake Factory's recent reports disagree with each other about year labels.
+def test_years_ending_in_the_first_week_of_january():
+    # These reports put the cover-page year (2023) on a year ending 2023-01-01,
+    # but the companies call it fiscal 2022.
+    assert revenue("DPZ", 2022)["value"] == 4_537_158_000
+    assert revenue("DPZ", 2021)["value"] == 4_357_373_000
+    cheesecake = {year: revenue("CAKE", year)["value"] for year in (2022, 2023, 2024)}
+    assert cheesecake == {2022: 3_303_156_000, 2023: 3_439_503_000, 2024: 3_581_699_000}
+
+
+def test_a_change_of_fiscal_year_end_keeps_old_names():
+    # Build-A-Bear's years ended near December 31 until 2017, then near January 31,
+    # and the naming style changed with it.
+    assert (revenue("BBW", 2016)["value"], revenue("BBW", 2016)["period_end"]) == (364_204_000, "2016-12-31")
+    assert revenue("BBW", 2017)["value"] == 357_866_000
+    assert (revenue("BBW", 2018)["value"], revenue("BBW", 2018)["period_end"]) == (336_585_000, "2019-02-02")
+
+
+def one_year(end, fy, filed, form="10-K"):
+    start = f"{int(end[:4]) - 1}{end[4:]}"
+    return {"start": start, "end": end, "val": 100, "accn": f"acc-{end}", "fy": fy, "form": form, "filed": filed}
+
+
+def test_too_few_reports_to_tell_the_naming_is_refused_for_january_years():
+    # One report for a year ending in late January: both naming styles are common there.
+    facts = {"facts": {"us-gaap": {"Revenues": {"units": {"USD": [one_year("2026-01-31", 2026, "2026-03-15")]}}}}}
     with pytest.raises(CantVerify):
-        revenue("CAKE", 2024)
+        find_annual_value(facts, "revenue", 2026)
+
+
+def test_one_report_is_enough_for_december_years():
+    facts = {"facts": {"us-gaap": {"Revenues": {"units": {"USD": [one_year("2025-12-31", 2025, "2026-02-15")]}}}}}
+    assert find_annual_value(facts, "revenue", 2025)["value"] == 100
 
 
 def test_two_periods_with_the_same_name_are_refused():
@@ -159,6 +204,14 @@ def test_restatement_is_found_even_when_the_tag_changed():
     assert found["originally_reported"]["value"] == 89_950_000_000
 
 
+def test_a_confused_first_report_is_not_called_a_change():
+    # P&G's 2014 report tagged its US sales ($29.4B) as "Revenues" next to total sales
+    # ($83.1B). We show the restated $74.4B, but claim nothing about that first report.
+    found = revenue("PG", 2014)
+    assert found["value"] == 74_401_000_000
+    assert found["originally_reported"] is None
+
+
 def test_unchanged_numbers_have_no_original():
     assert revenue("AAPL", 2024)["originally_reported"] is None
 
@@ -166,11 +219,14 @@ def test_unchanged_numbers_have_no_original():
 def test_rounding_is_not_a_restatement():
     # NVIDIA's fiscal 2014: $4,130,162 thousand at first, later shown as $4,130 million.
     assert revenue("NVDA", 2014)["originally_reported"] is None
+    # Progressive's 2023: $62,108.5 million at first, later $62,109 million.
+    assert revenue("PGR", 2023)["originally_reported"] is None
 
 
 @pytest.mark.parametrize("a, b, same", [
     (4_130_162_000, 4_130_000_000, True),
     (48_549_982_000, 48_550_000_000, True),
+    (62_108_500_000, 62_109_000_000, True),
     (89_950_000_000, 96_571_000_000, False),
     (0, 185_971, False),
     (1_234_567, 1_234_568, False),
