@@ -1,0 +1,26 @@
+[project]
+name = "receipts"
+version = "0.1.0"
+description = "An AI agent that fact-checks stock claims against official SEC filings, with a receipt for every number."
+readme = "README.md"
+authors = [
+    { name = "Tianrui Che" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "python-dotenv>=1.2.4",
+    "requests>=2.34.2",
+    "rich>=15.0.0",
+]
+
+[project.scripts]
+receipts = "receipts.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.11.32,<0.12.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
